@@ -1,182 +1,132 @@
 import random
 
-
-class Card:
-    def __init__(self, suit, value):
+class Card():
+    def __init__(self, suit, rank):
         self.suit = suit
-        self.value = value
+        self.rank = rank
 
-    def get_value(self):
-        if self.value in ["Jack", "Queen", "King"]:
+    def value(self):
+        if self.rank in ["J", "Q", "K"]:
             return 10
-        elif self.value == "Ace":
+        elif self.rank == "A":
             return 11
         else:
-            return int(self.value)
+            return int(self.rank)
 
 
-class Deck:
-    def __init__(self, decks = 4):
-        self.deck = self.create_deck(decks)
-        self.shuffle_deck()
+class Deck():
+    def __init__(self, number_of_decks = 8):
+        self.cards = []
+        self.number_of_decks = number_of_decks
+        self.create_deck()
 
-    def create_deck(self, decks):
-        values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King', 'Ace']
-        suits = ["Sinek", "Maça", "Kupa", "Karo"]
-
-        deck = []
-        for _ in range(decks):
-            for suit in suits:
-                for value in values:
-                    deck.append(Card(suit, value))
-
-        return deck
+    def create_deck(self):
+        suits = ['heart', 'club', 'diamond', 'spade']
+        ranks = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
+        self.cards = [Card(suit, rank) for _ in range(self.number_of_decks) for suit in suits for rank in ranks]
 
     def shuffle_deck(self):
-        random.shuffle(self.deck)
+        random.shuffle(self.cards)
 
-    def draw_card(self):
-        if len(self.deck) == 0:
-            self.deck = self.create_deck(self.decks)
-            self.shuffle_deck()
+    def draw(self):
+        return self.cards.pop()
 
-        return self.deck.pop()
-
-
-class Hand:
-    def __init__(self):
-        self.cards = []
-
-    def add_card(self, card, closed=False):
-        if closed:
-            self.cards.append(Card(card.suit, "Closed"))
-        else:
-            self.cards.append(card)
-
-    def show_hand(self):
-        return self.cards
-
-    def calculate(self):
-        total = 0
-        for card in self.cards:
-            if card.value() != ("Closed"):
-                total += card.get_value()
+    def remaining_cards(self):
+        return len(self.cards)
 
 
 
+class Participant():
+    def __init__(self, score = 0):
+        self.hand = []
+        self.score = score
 
+    def add_card(self, card):
+        self.hand.append(card)
 
+class Player(Participant):
+    def __init__(self, budget=1000, bet=10):
+        super().__init__()
+        self.budget = budget
+        self.bet = bet
 
-
-class PlayerHand(Hand):
+class Dealer(Participant):
     def __init__(self):
         super().__init__()
-        self.splitted = False
-        self.stood = False
-        self.split_hands = []
+
+    def hide_first_card(self):
+        if len(self.hand) > 0:
+            pass
+
+    def reveal_cards(self):
+        return self.hand
+
+    def dealersTurn(self):
+        while BlackJack().calculate_score() < 17:
+            BlackJack().dealer_hit()
 
 
-    def hit(self, deck):
-        if not self.stood:
-            card = deck.draw_card()
-            self.add_card(card)
+class BlackJack():
+    def __init__(self):
+        self.player = Player()
+        self.dealer = Dealer()
+        self.deck = Deck()
 
-            return card
+    def player_hit(self):
+        card = self.deck.draw()
+        self.player.add_card(card)
 
+    def dealer_hit(self):
+        card = self.deck.draw()
+        self.dealer.add_card(card)
 
     def stand(self):
-        self.stood = True
+        self.dealer.dealersTurn()
 
-    def split(self, deck):
-        if len(self.cards) == 2 and self.cards[0].value == self.cards[1].value:
-            self.splitted = True
-            card1 = self.cards.pop()
-            card2 = self.cards.pop()
+    def calculate_score(self):
+        aces = 0
+        score = 0
+        for card in self.dealer.hand:
+            value = Card().value()
+            score += value
+            aces += 1 if value == 11 else None
+        while score > 21 and aces:
+            score -= 10
+            aces -= 1
 
-            hand1 = PlayerHand()
-            hand2 = PlayerHand()
+        return score
 
-            hand1.add_card(card1)
-            hand2.add_card(card2)
 
-            hand1.add_card(deck.draw_card())
-            hand2.add_card(deck.draw_card())
+    def check_winner(self, winner):
+        player = self.calculate_score()
+        dealer = self.calculate_score()
 
-            self.split_hands = [hand1, hand2]
-            return hand1, hand2
-
+        if player > 21:
+            winner = self.dealer
+        elif dealer > 21:
+            winner = self.dealer
+        elif dealer > player:
+            winner = self.dealer
+        elif player > dealer:
+            winner = self.dealer
         else:
-            return None
-
-    def resetHand(self):
-        self.stood = False
-        self.splitted = False
-        self.split_hands = []
-
-
-class DealerHand(Hand):
-    def __init__(self):
-        super().__init__()
-        self.second_card_closed = True  # dealers second card is closed
-
-        def open_second_card(self):
-            if self.second_card_closed and len(self.cards) > 1:
-                self.cards[1].value = self.cards[1].value
-                self.second_card_closed = False
-
-                return self.cards[1]
-
-
-
-class BlackJack:
-    def __init__(self):
-        self.deck = Deck()
-        self.player_hand = PlayerHand()
-        self.dealer_hand = DealerHand()
-        self.winner = None
-
-
-    def deal_card(self, hand, closed=False):
-        card = self.deck.draw_card()
-        hand.add_card(card, closed)
-
-        return card
+            winner = "Tie"
 
 
     def new_round(self):
-        self.player_hand = Hand()
-        self.dealer_hand = Hand()
+        pass
 
-        self.deal_card(self.player_hand)  # first card
-        self.deal_card(self.player_hand)  # second card
-        self.deal_card(self.dealer_hand)  # dealer's first card
-        self.deal_card(self.dealer_hand, True)  # dealer's second card closed
+    def start(self):
+        self.deck.create_deck()
+        self.deck.shuffle_deck()
 
-    def show_hands(self):
+        self.player.add_card(self.deck.draw())
+        self.dealer.add_card(self.deck.draw())
+        self.player.add_card(self.deck.draw())
+        self.dealer.add_card(self.deck.draw())
 
-        return self.dealer_hand.show_hand(), self.player_hand.show_hand()
 
-    def check_winner(self):
-        playerTotal = self.player_hand.calculate()
-        dealerTotal = self.dealer_hand.calculate()
 
-        if playerTotal>21:
-            self.winner = "Dealer"
-        elif dealerTotal > 21:
-            self.winner = "Player"
-        elif dealerTotal > playerTotal:
-            self.winner = "Dealer"
-        elif playerTotal > dealerTotal:
-            self.winner = "Player"
-        else:
-            self.winner = None
-
-    def dealerTurn(self):
-
-        self.dealer_hand.open_second_card()
-
-        while self.dealer_hand.calculate() < 17:
-            self.dealer_hand.add_card(self.deck.draw_card())
 
 
 
