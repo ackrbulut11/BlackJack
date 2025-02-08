@@ -67,10 +67,11 @@ class Dealer(Participant):
 
 
 class BlackJack():
-    def __init__(self):
+    def __init__(self, winner):
         self.player = Player()
         self.dealer = Dealer()
         self.deck = Deck()
+        self.winner = winner
 
     def player_hit(self):
         card = self.deck.draw()
@@ -97,24 +98,32 @@ class BlackJack():
         return score
 
 
-    def check_winner(self, winner):
+    def check_winner(self):
         player = self.calculate_score()
         dealer = self.calculate_score()
 
+
         if player > 21:
-            winner = self.dealer
+            self.winner = self.dealer
         elif dealer > 21:
-            winner = self.dealer
+            self.winner = self.dealer
         elif dealer > player:
-            winner = self.dealer
+            self.winner = self.dealer
         elif player > dealer:
-            winner = self.dealer
+            self.winner = self.dealer
         else:
-            winner = "Tie"
+            self.winner = "Tie"
+
+        self.player.budget += (self.player.bet * 2) if self.winner == self.player else None
+        self.player.budget += self.player.bet if self.winner == "Tie" else None
 
 
     def new_round(self):
-        pass
+        self.player.hand = []
+        self.player.score = 0
+        self.dealer.hand = []
+        self.dealer.score = 0
+
 
     def start(self):
         self.deck.create_deck()
