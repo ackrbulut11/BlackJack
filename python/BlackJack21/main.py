@@ -1,7 +1,7 @@
 from ui import *
 
 def main():
-    game = Board()
+    game = BlackJackUI()
     game.run()
 
 

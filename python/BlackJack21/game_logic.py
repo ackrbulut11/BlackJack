@@ -1,6 +1,6 @@
 import random
 
-class Card():
+class Card:
     def __init__(self, suit, rank):
         self.suit = suit
         self.rank = rank
@@ -14,7 +14,7 @@ class Card():
             return int(self.rank)
 
 
-class Deck():
+class Deck:
     def __init__(self, number_of_decks = 8):
         self.cards = []
         self.number_of_decks = number_of_decks
@@ -36,7 +36,7 @@ class Deck():
 
 
 
-class Participant():
+class Participant:
     def __init__(self, score = 0):
         self.hand = []
         self.score = score
@@ -56,18 +56,18 @@ class Dealer(Participant):
 
     def hide_first_card(self):
         if len(self.hand) > 0:
-            pass
+            self.hand[0].hidden = True
 
     def reveal_cards(self):
         return self.hand
 
-    def dealersTurn(self):
-        while BlackJack().calculate_score() < 17:
-            BlackJack().dealer_hit()
+    def dealersTurn(self, deck):
+        while self.calculate_score(self.hand) < 17:
+            self.add_card(deck.draw())
 
 
 class BlackJack():
-    def __init__(self, winner):
+    def __init__(self, winner = None):
         self.player = Player()
         self.dealer = Dealer()
         self.deck = Deck()
@@ -82,15 +82,19 @@ class BlackJack():
         self.dealer.add_card(card)
 
     def stand(self):
-        self.dealer.dealersTurn()
+        self.dealer.hand[0].hidden = False
+        self.dealer.dealersTurn(self.deck)
+        self.check_winner()
 
-    def calculate_score(self):
+    def calculate_score(self, hand):
         aces = 0
         score = 0
-        for card in self.dealer.hand:
-            value = Card().value()
+        for card in hand:
+            value = card.value()
             score += value
-            aces += 1 if value == 11 else None
+            if value == 11:
+                aces += 1
+
         while score > 21 and aces:
             score -= 10
             aces -= 1
@@ -99,23 +103,25 @@ class BlackJack():
 
 
     def check_winner(self):
-        player = self.calculate_score()
-        dealer = self.calculate_score()
-
+        player = self.calculate_score(self.player.hand)
+        dealer = self.calculate_score(self.dealer.hand)
 
         if player > 21:
             self.winner = self.dealer
         elif dealer > 21:
-            self.winner = self.dealer
+            self.winner = self.player
         elif dealer > player:
             self.winner = self.dealer
         elif player > dealer:
-            self.winner = self.dealer
+            self.winner = self.player
         else:
             self.winner = "Tie"
 
-        self.player.budget += (self.player.bet * 2) if self.winner == self.player else None
-        self.player.budget += self.player.bet if self.winner == "Tie" else None
+        # pay award
+        if self.winner == self.player:
+            self.player.budget += self.player.bet * 2
+        elif self.winner == "Tie":
+            self.player.budget += self.player.bet
 
 
     def new_round(self):
@@ -124,21 +130,22 @@ class BlackJack():
         self.dealer.hand = []
         self.dealer.score = 0
 
+        self.player.budget -= self.player.bet
 
-    def start(self):
+        self.start_new_round()
+
+    def start_new_round(self):
+        self.player.add_card(self.deck.draw())
+        self.hidden_card =self.deck.draw()  # hidden card
+        self.player.add_card(self.deck.draw())
+        self.dealer.add_card(self.deck.draw())
+
+
+
+    def start_game(self):
         self.deck.create_deck()
         self.deck.shuffle_deck()
 
-        self.player.add_card(self.deck.draw())
-        self.dealer.add_card(self.deck.draw())
-        self.player.add_card(self.deck.draw())
-        self.dealer.add_card(self.deck.draw())
-
-
-
-
-
-
-
+        self.start_new_round()
 
 
