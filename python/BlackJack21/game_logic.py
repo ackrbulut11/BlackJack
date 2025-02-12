@@ -5,6 +5,9 @@ class Card:
         self.suit = suit
         self.rank = rank
 
+    def __str__(self):
+        return f"{self.suit} of {self.rank}"
+
     def value(self):
         if self.rank in ["J", "Q", "K"]:
             return 10
@@ -21,7 +24,7 @@ class Deck:
         self.create_deck()
 
     def create_deck(self):
-        suits = ['heart', 'club', 'diamond', 'spade']
+        suits = ['heart', 'club', 'diamond', 'spades']
         ranks = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]
         self.cards = [Card(suit, rank) for _ in range(self.number_of_decks) for suit in suits for rank in ranks]
 
@@ -37,12 +40,27 @@ class Deck:
 
 
 class Participant:
-    def __init__(self, score = 0):
+    def __init__(self):
         self.hand = []
-        self.score = score
+        self.score = self.calculate_score(self.hand)
 
     def add_card(self, card):
         self.hand.append(card)
+
+    def calculate_score(self, hand):
+        aces = 0
+        score = 0
+        for card in hand:
+            value = card.value()
+            score += value
+            if value == 11:
+                aces += 1
+
+        while score > 21 and aces:
+            score -= 10
+            aces -= 1
+
+        return score
 
 class Player(Participant):
     def __init__(self, budget=1000, bet=10):
@@ -53,6 +71,7 @@ class Player(Participant):
 class Dealer(Participant):
     def __init__(self):
         super().__init__()
+        self.player = Player()
 
     def hide_first_card(self):
         if len(self.hand) > 0:
@@ -62,7 +81,8 @@ class Dealer(Participant):
         return self.hand
 
     def dealersTurn(self, deck):
-        while self.calculate_score(self.hand) < 17:
+        while (self.calculate_score(self.hand) < 17 and
+               self.calculate_score(self.hand) <= self.player.calculate_score(self.player.hand)):
             self.add_card(deck.draw())
 
 
@@ -86,25 +106,10 @@ class BlackJack():
         self.dealer.dealersTurn(self.deck)
         self.check_winner()
 
-    def calculate_score(self, hand):
-        aces = 0
-        score = 0
-        for card in hand:
-            value = card.value()
-            score += value
-            if value == 11:
-                aces += 1
-
-        while score > 21 and aces:
-            score -= 10
-            aces -= 1
-
-        return score
-
 
     def check_winner(self):
-        player = self.calculate_score(self.player.hand)
-        dealer = self.calculate_score(self.dealer.hand)
+        player = self.player.calculate_score(self.player.hand)
+        dealer = self.dealer.calculate_score(self.dealer.hand)
 
         if player > 21:
             self.winner = self.dealer
@@ -136,10 +141,9 @@ class BlackJack():
 
     def start_new_round(self):
         self.player.add_card(self.deck.draw())
-        self.hidden_card =self.deck.draw()  # hidden card
+        self.hidden_card = self.deck.draw()  # hidden card
         self.player.add_card(self.deck.draw())
         self.dealer.add_card(self.deck.draw())
-
 
 
     def start_game(self):
@@ -147,5 +151,4 @@ class BlackJack():
         self.deck.shuffle_deck()
 
         self.start_new_round()
-
 
