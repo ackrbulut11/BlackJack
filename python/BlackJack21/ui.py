@@ -51,6 +51,7 @@ class BlackJackUI:
         self.font = pygame.font.Font('freesansbold.ttf', 20)
 
         self.update_budget()
+        self.update_score()
 
         # buttons
         self.button_color = "#d3ebd4"
@@ -66,35 +67,53 @@ class BlackJackUI:
     def load_card_images(self):
         card_images = {}
         folder = "cards"
-        for suit in ["heart", "club", "diamond", "spade"]:
+        for suit in ["heart", "club", "diamond", "spades"]:
             for rank in ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"]:
-                filename = f"{suit} of {rank}.png"
+                filename = f"{suit}_{rank}.png"
                 path = os.path.join(folder, filename)
 
                 if os.path.exists(path):
                     img = pygame.image.load(path)
                     img = pygame.transform.scale(img,(80, 120))
-                    card_images[f"{suit} of {rank}"] = img
+                    card_images[f"{suit}_{rank}"] = img
         return card_images
 
     def get_card_img(self, card):
-        return self.card_images.get(f"{card.suit} of {card.rank}", None)    # if there is no card return None
+        card_name = f"{card.suit}_{card.rank}"
+        img = self.card_images.get(card_name, None)
+
+        return img
 
     def update_budget(self):
-        self.budget_text = self.font.render(f"Budget: ${self.game.player.budget}", True, "black", "#d3ebd4")
+        self.budget_text = self.font.render(f"Budget: ${self.game.player.budget}", True, "white", self.bg_color)
         self.budget_rect = self.budget_text.get_rect(topleft=(20, 20))
 
-        self.bet_text = self.font.render(f"Bet: ${self.game.player.bet}", True, "black", "#d3ebd4")
+        self.bet_text = self.font.render(f"Bet: ${self.game.player.bet}", True, "white", self.bg_color)
         self.bet_rect = self.bet_text.get_rect(topleft=(20, 50))
+
+
+    def update_score(self):
+        # update score
+        self.game.player.score = self.game.player.calculate_score(self.game.player.hand)
+        self.game.dealer.score = self.game.dealer.calculate_score(self.game.dealer.hand)
+
+        self.dealers_score_text = self.font.render(f"Dealers hand: {self.game.dealer.score}", True, "white", self.bg_color )
+        self.dealers_score_rect = self.dealers_score_text.get_rect(center=(self.width // 2, 240))
+
+        self.players_score_text = self.font.render(f"Players hand: {self.game.player.score}", True, "white", self.bg_color)
+        self.players_score_rect = self.players_score_text.get_rect(center=(self.width // 2, 270))
+
 
     def player_hit(self):
         self.game.player_hit()
+        self.update_score()
 
     def stand(self):
         self.game.stand()
+        self.update_score()
+
 
     def run(self):
-
         # keep game running till running is true
         while self.running:
             # draw Button
@@ -104,6 +123,10 @@ class BlackJackUI:
             # budget and bet
             self.surface.blit(self.budget_text, self.budget_rect)
             self.surface.blit(self.bet_text, self.bet_rect)
+
+            # card values (scores)
+            self.surface.blit(self.dealers_score_text, self.dealers_score_rect)
+            self.surface.blit(self.players_score_text, self.players_score_rect)
 
             # draw players cards
             for index, card in enumerate(self.game.player.hand):
@@ -118,6 +141,7 @@ class BlackJackUI:
                 if index == 0 and hasattr(card, "hidden") and card.hidden:
                     img = pygame.image.load("closed_card.png")
                     img.pygame.transform.scale(img(80,120))
+
                 img = self.get_card_img(card)
                 if img:
                     x = 250 + index * 100
