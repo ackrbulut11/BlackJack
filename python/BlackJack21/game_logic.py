@@ -81,8 +81,7 @@ class Dealer(Participant):
         return self.hand
 
     def dealersTurn(self, deck):
-        while (self.calculate_score(self.hand) < 17 and
-               self.calculate_score(self.hand) <= self.player.calculate_score(self.player.hand)):
+        while self.calculate_score(self.hand) < 17:
             self.add_card(deck.draw())
 
 
