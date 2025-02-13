@@ -23,6 +23,7 @@ class Button:
         surface.blit(text_render, text_rect)
 
 
+
 class BlackJackUI:
     def __init__(self):
         self.running = True
@@ -52,14 +53,20 @@ class BlackJackUI:
 
         self.update_budget()
         self.update_score()
+        self.case_rect = None
+        self.case_text = None
+        self.update_case()
 
         # buttons
         self.button_color = "#d3ebd4"
         self.center_x = self.width // 2     # center of the screen for button coordinates
-        self.hit_button = Button(self.center_x-90, 440, 70, 30,
-                                 "Hit", self.button_color, "black", 20, lambda: self.player_hit())
-        self.stand_button = Button(self.center_x, 440, 70, 30,
-                                   "Stand", self.button_color, "black", 20, lambda: self.stand())
+        self.hit_button = Button(self.center_x-90, 440, 70, 30,"Hit",
+                                 self.button_color, "black", 20, lambda: self.player_hit())
+        self.stand_button = Button(self.center_x, 440, 70, 30,"Stand",
+                                   self.button_color, "black", 20, lambda: self.stand())
+        self.restart_button = Button(800, 30, 70, 30,"Restart",
+                                     self.button_color, "black", 20, lambda: self.restart_game())
+
 
         # card images
         self.card_images = self.load_card_images()
@@ -81,8 +88,42 @@ class BlackJackUI:
     def get_card_img(self, card):
         card_name = f"{card.suit}_{card.rank}"
         img = self.card_images.get(card_name, None)
-
         return img
+
+    def check_winner(self):
+        self.winner = self.game.check_winner()
+        self.update_budget()
+        self.update_case()
+
+    def restart_game(self):
+        self.game.start_game()
+        self.game.winner = None
+        self.case_text = None
+        self.case_rect = None
+        self.update_budget()
+        self.update_score()  # reset case_text
+        self.update_screen()
+
+
+    def win_or_lose(self):
+        if self.check_winner == self.game.player:
+            return f"Won {self.game.player.bet * 2}"
+        elif self.check_winner == self.game.dealer:
+            return f"Lost {self.game.player.bet}"
+        elif self.game.winner == "Tie":
+            return "Tie"
+        else:
+            return None
+
+    def update_case(self):
+        case_message = self.win_or_lose()
+        if case_message:
+            self.case_text = self.font.render(f"{case_message}", True, "white", self.bg_color)
+            self.case_rect = self.case_text.get_rect(center=(450, 20))
+
+        else:
+            self.case_rect = None
+            self.case_text = None
 
     def update_budget(self):
         self.budget_text = self.font.render(f"Budget: ${self.game.player.budget}", True, "white", self.bg_color)
@@ -90,7 +131,6 @@ class BlackJackUI:
 
         self.bet_text = self.font.render(f"Bet: ${self.game.player.bet}", True, "white", self.bg_color)
         self.bet_rect = self.bet_text.get_rect(topleft=(20, 50))
-
 
     def update_score(self):
         # update score
@@ -101,52 +141,80 @@ class BlackJackUI:
         self.dealers_score_rect = self.dealers_score_text.get_rect(center=(self.width // 2, 240))
 
         self.players_score_text = self.font.render(f"Players hand: {self.game.player.score}", True, "white", self.bg_color)
-        self.players_score_rect = self.players_score_text.get_rect(center=(self.width // 2, 270))
+        self.players_score_rect = self.players_score_text.get_rect(center=(self.width // 2 , 270))
 
 
     def player_hit(self):
-        self.game.player_hit()
-        self.update_score()
+        if self.game.player.score < 21:
+            self.game.player_hit()
+            self.update_score()
+
 
     def stand(self):
         self.game.stand()
         self.update_score()
 
+        for card in self.game.dealer.hand:
+            if hasattr(card, "hidden") and card.hidden:
+                card.hidden = False  # open card
+                self.update_screen()  # update screen
+
+        self.check_winner()
+        self.update_case()
+        self.update_screen()
+
+
+    def update_screen(self):
+        self.surface.fill(self.bg_color)  # clear background
+
+        # draw buttons
+        self.hit_button.draw(self.surface)
+        self.stand_button.draw(self.surface)
+        self.restart_button.draw(self.surface)
+
+        # update case
+        if self.case_text:
+            self.surface.blit(self.case_text, self.case_rect)
+
+        # Budget and bet values
+        self.surface.blit(self.budget_text, self.budget_rect)
+        self.surface.blit(self.bet_text, self.bet_rect)
+
+        # card values
+        self.surface.blit(self.dealers_score_text, self.dealers_score_rect)
+        self.surface.blit(self.players_score_text, self.players_score_rect)
+
+        if self.case_text:
+            self.surface.blit(self.case_text, self.case_rect)
+
+        # draw player cards
+        for index, card in enumerate(self.game.player.hand):
+            img = self.get_card_img(card)
+            if img:
+                x = 250 + index * 100
+                y = 300
+                self.surface.blit(img, (x, y))
+
+        # draw dealer cards
+        for index, card in enumerate(self.game.dealer.hand):
+            if hasattr(card, "hidden") and card.hidden:
+                img = pygame.image.load("closed_card.png")
+                img = pygame.transform.scale(img, (80, 120))
+            else:
+                img = self.get_card_img(card)
+
+            if img:
+                x = 250 + index * 100
+                y = 100
+                self.surface.blit(img, (x, y))
+
+        pygame.display.flip()  # update screen
 
     def run(self):
         # keep game running till running is true
         while self.running:
-            # draw Button
-            self.hit_button.draw(self.surface)
-            self.stand_button.draw(self.surface)
 
-            # budget and bet
-            self.surface.blit(self.budget_text, self.budget_rect)
-            self.surface.blit(self.bet_text, self.bet_rect)
-
-            # card values (scores)
-            self.surface.blit(self.dealers_score_text, self.dealers_score_rect)
-            self.surface.blit(self.players_score_text, self.players_score_rect)
-
-            # draw players cards
-            for index, card in enumerate(self.game.player.hand):
-                img = self.get_card_img(card)
-                if img:
-                    x = 250 + index * 100
-                    y = 300
-                    self.surface.blit(img, (x, y))
-
-            # draw dealers cards
-            for index, card in enumerate(self.game.dealer.hand):
-                if index == 0 and hasattr(card, "hidden") and card.hidden:
-                    img = pygame.image.load("closed_card.png")
-                    img.pygame.transform.scale(img(80,120))
-
-                img = self.get_card_img(card)
-                if img:
-                    x = 250 + index * 100
-                    y = 100
-                    self.surface.blit(img, (x, y))
+            self.update_screen()
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -155,7 +223,6 @@ class BlackJackUI:
                 # check if click is on button or not
                 self.hit_button.check_click(event)
                 self.stand_button.check_click(event)
-
-            pygame.display.flip()
+                self.restart_button.check_click(event)
 
         pygame.quit()

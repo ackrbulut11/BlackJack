@@ -1,4 +1,5 @@
 import random
+from time import sleep
 
 class Card:
     def __init__(self, suit, rank):
@@ -18,7 +19,7 @@ class Card:
 
 
 class Deck:
-    def __init__(self, number_of_decks = 8):
+    def __init__(self, number_of_decks = 4):
         self.cards = []
         self.number_of_decks = number_of_decks
         self.create_deck()
@@ -38,7 +39,6 @@ class Deck:
         return len(self.cards)
 
 
-
 class Participant:
     def __init__(self):
         self.hand = []
@@ -50,7 +50,10 @@ class Participant:
     def calculate_score(self, hand):
         aces = 0
         score = 0
-        for card in hand:
+        for i, card in enumerate(hand):
+            if i == 0 and hasattr(card, "hidden") and card.hidden:
+                continue
+
             value = card.value()
             score += value
             if value == 11:
@@ -63,7 +66,7 @@ class Participant:
         return score
 
 class Player(Participant):
-    def __init__(self, budget=1000, bet=10):
+    def __init__(self, budget=1000, bet=50):
         super().__init__()
         self.budget = budget
         self.bet = bet
@@ -74,15 +77,13 @@ class Dealer(Participant):
         self.player = Player()
 
     def hide_first_card(self):
-        if len(self.hand) > 0:
+        if len(self.hand) > 1:
             self.hand[0].hidden = True
-
-    def reveal_cards(self):
-        return self.hand
 
     def dealersTurn(self, deck):
         while self.calculate_score(self.hand) < 17:
             self.add_card(deck.draw())
+            sleep(0.3)
 
 
 class BlackJack():
@@ -127,6 +128,8 @@ class BlackJack():
         elif self.winner == "Tie":
             self.player.budget += self.player.bet
 
+        return self.winner
+
 
     def new_round(self):
         self.player.hand = []
@@ -136,18 +139,14 @@ class BlackJack():
 
         self.player.budget -= self.player.bet
 
-        self.start_new_round()
-
-    def start_new_round(self):
-        self.player.add_card(self.deck.draw())
-        self.hidden_card = self.deck.draw()  # hidden card
         self.player.add_card(self.deck.draw())
         self.dealer.add_card(self.deck.draw())
+        self.player.add_card(self.deck.draw())
+        self.hidden_card = self.deck.draw()  # hidden card
 
 
     def start_game(self):
         self.deck.create_deck()
         self.deck.shuffle_deck()
 
-        self.start_new_round()
-
+        self.new_round()
