@@ -171,28 +171,30 @@ class BlackJackUI:
 
 
     def player_hit(self):
-        if self.game.player.score < 21 and self.stood == False:
+        if self.game.player.score <= 21 and self.stood == False:
             self.game.player_hit()
             self.update_score()
 
             if self.game.player.score > 21:
                 self.busted = True
-                self.stand()
-
+                self.update_score()
+                self.check_winner()
 
     def stand(self):
 
-        if not self.busted: # if busted, do not draw card
+        if self.stood or self.busted:  # stand button does not work without pressing the restart
+            return
+
+        if not self.busted:  # If player busted, button does not work
             self.game.stand()
             self.update_score()
 
             for card in self.game.dealer.hand:
                 if hasattr(card, "hidden") and card.hidden:
-
                     card.hidden = False  # open card
                     self.update_screen()  # update screen
 
-        self.stood = True
+        self.stood = True  # Stand Button pressed
         self.check_winner()
         self.update_case()
         self.update_screen()
