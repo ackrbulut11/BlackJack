@@ -95,6 +95,7 @@ class BlackJackUI:
         self.update_budget()
         self.update_case()
 
+
     def restart_game(self):
         self.game.start_game()
         self.game.winner = None
@@ -104,11 +105,10 @@ class BlackJackUI:
         self.update_score()  # reset case_text
         self.update_screen()
 
-
     def win_or_lose(self):
-        if self.check_winner == self.game.player:
+        if self.game.winner == self.game.player:
             return f"Won {self.game.player.bet * 2}"
-        elif self.check_winner == self.game.dealer:
+        elif self.game.winner == self.game.dealer:
             return f"Lost {self.game.player.bet}"
         elif self.game.winner == "Tie":
             return "Tie"
@@ -149,8 +149,12 @@ class BlackJackUI:
             self.game.player_hit()
             self.update_score()
 
+            if self.game.player.score > 21:
+                self.stand()
+
 
     def stand(self):
+
         self.game.stand()
         self.update_score()
 
