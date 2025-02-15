@@ -111,7 +111,7 @@ class BlackJackUI:
 
 
     def restart_game(self):
-        self.game.start_game()
+        self.game.new_round()
         self.game.winner = None
         self.case_text = None
         self.case_rect = None

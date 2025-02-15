@@ -21,6 +21,7 @@ class Card:
 class Deck:
     def __init__(self, number_of_decks = 4):
         self.cards = []
+        self.used_cards = []
         self.number_of_decks = number_of_decks
         self.create_deck()
 
@@ -33,7 +34,13 @@ class Deck:
         random.shuffle(self.cards)
 
     def draw(self):
-        return self.cards.pop()
+        if len(self.cards) <= 10:
+            self.cards = self.used_cards[:]
+            self.used_cards = []
+            self.shuffle_deck()
+        card = self.cards.pop()
+        self.used_cards.append(card)    # Used cards can not be drawn again
+        return card
 
     def remaining_cards(self):
         return len(self.cards)
