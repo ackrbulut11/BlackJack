@@ -102,7 +102,6 @@ class BlackJack():
         self.dealer.add_card(card)
 
     def stand(self):
-        self.dealer.hand[0].hidden = False
         self.dealer.dealersTurn(self.deck)
         self.check_winner()
 

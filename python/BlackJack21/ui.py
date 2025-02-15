@@ -55,6 +55,8 @@ class BlackJackUI:
         self.update_score()
         self.case_rect = None
         self.case_text = None
+        self.stood = False
+        self.busted = False
         self.update_case()
 
         # buttons
@@ -90,6 +92,14 @@ class BlackJackUI:
         img = self.card_images.get(card_name, None)
         return img
 
+    def load_closed_card(self):
+        path = "cards/closed_card.png"
+        closed_card = pygame.image.load(path)
+        closed_card = pygame.transform.scale(closed_card, (80, 120))
+        print(f"Kapalı kart {path} başarıyla yüklendi!")  # Başarı mesajı ekle
+
+        return closed_card
+
     def check_winner(self):
         self.winner = self.game.check_winner()
         self.update_budget()
@@ -101,26 +111,42 @@ class BlackJackUI:
         self.game.winner = None
         self.case_text = None
         self.case_rect = None
+        self.stood = False
+        self.busted = False
         self.update_budget()
         self.update_score()  # reset case_text
         self.update_screen()
 
     def win_or_lose(self):
+
         if self.game.winner == self.game.player:
-            return f"Won {self.game.player.bet * 2}"
+            self.case = 1
+            return f"Won ${self.game.player.bet * 2}"
         elif self.game.winner == self.game.dealer:
-            return f"Lost {self.game.player.bet}"
+            self.case = 2
+            return f"Lost ${self.game.player.bet}"
         elif self.game.winner == "Tie":
+            self.case = 0
             return "Tie"
         else:
+            self.case = None
             return None
 
     def update_case(self):
         case_message = self.win_or_lose()
-        if case_message:
-            self.case_text = self.font.render(f"{case_message}", True, "white", self.bg_color)
-            self.case_rect = self.case_text.get_rect(center=(450, 20))
+        case_font = pygame.font.Font('freesansbold.ttf', 70)  # bigger font
 
+        if self.case == 2:      # dealer won
+            self.case_text = case_font.render(f" {case_message}! ", True, "white", "#f53646")
+            self.case_rect = self.case_text.get_rect(center=(450, 50))
+
+        elif self.case == 1:    # player won
+            self.case_text = case_font.render(f" {case_message}! ", True, "white", "#58d4ed")
+            self.case_rect = self.case_text.get_rect(center=(450, 50))
+
+        elif self.case == 0:     # tie
+            self.case_text = case_font.render(f" {case_message}! ", True, "white", "#c4c40e")
+            self.case_rect = self.case_text.get_rect(center=(450, 50))
         else:
             self.case_rect = None
             self.case_text = None
@@ -145,24 +171,28 @@ class BlackJackUI:
 
 
     def player_hit(self):
-        if self.game.player.score < 21:
+        if self.game.player.score < 21 and self.stood == False:
             self.game.player_hit()
             self.update_score()
 
             if self.game.player.score > 21:
+                self.busted = True
                 self.stand()
 
 
     def stand(self):
 
-        self.game.stand()
-        self.update_score()
+        if not self.busted: # if busted, do not draw card
+            self.game.stand()
+            self.update_score()
 
-        for card in self.game.dealer.hand:
-            if hasattr(card, "hidden") and card.hidden:
-                card.hidden = False  # open card
-                self.update_screen()  # update screen
+            for card in self.game.dealer.hand:
+                if hasattr(card, "hidden") and card.hidden:
 
+                    card.hidden = False  # open card
+                    self.update_screen()  # update screen
+
+        self.stood = True
         self.check_winner()
         self.update_case()
         self.update_screen()
@@ -202,10 +232,10 @@ class BlackJackUI:
         # draw dealer cards
         for index, card in enumerate(self.game.dealer.hand):
             if hasattr(card, "hidden") and card.hidden:
-                img = pygame.image.load("closed_card.png")
-                img = pygame.transform.scale(img, (80, 120))
+                img = self.load_closed_card()   # closed card
             else:
                 img = self.get_card_img(card)
+
 
             if img:
                 x = 250 + index * 100
@@ -217,6 +247,9 @@ class BlackJackUI:
     def run(self):
         # keep game running till running is true
         while self.running:
+
+            if self.game.player.budget < 0:
+                self.running = False
 
             self.update_screen()
 
