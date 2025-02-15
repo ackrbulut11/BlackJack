@@ -35,6 +35,10 @@ class BlackJackUI:
         self.res = (self.width, self.height)
         self.surface = pygame.display.set_mode(self.res)
 
+        # logo
+        logo = pygame.image.load('cards/blackjack.png')
+        pygame.display.set_icon(logo)
+
         # title
         self.title = "BlackJack"
         pygame.display.set_caption(self.title)
