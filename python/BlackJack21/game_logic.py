@@ -123,7 +123,7 @@ class BlackJack():
 
         # pay award
         if self.winner == self.player:
-            self.player.budget += self.player.bet * 2
+            self.player.budget += self.player.bet
         elif self.winner == "Tie":
             self.player.budget += self.player.bet
 
